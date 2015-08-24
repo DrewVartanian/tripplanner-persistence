@@ -7,6 +7,7 @@ var Day = models.Day;
 var Restaurant = models.Restaurant;
 var Activity = models.Activity;
 var Promise = require('bluebird');
+var mongoose = require('mongoose');
 
 router.get('/', function(req,res,next) {
   Day.find().exec().then(function(days){
@@ -14,12 +15,14 @@ router.get('/', function(req,res,next) {
   }).catch(next);
 });
 
-router.post('/create',function(req,res){
+router.post('/create',function(req,res,next){
   Day.create({}).then(function(day){
     Trip.findOne({}).exec().then(function(trip){
       trip = trip || new Trip({days: []});
       trip.days.push(day._id);
-      trip.save().then(res.send);
+      trip.save().then(function(){
+        res.send();
+      });
     }).catch(next);
   });
 });
@@ -33,28 +36,72 @@ router.param('id', function(req,res,next,id){
   });
 });
 
-router.get('/:id',function(req,res){
+router.get('/:id',function(req,res,next){
   res.json(req.day);
 });
 
-router.delete('/:id',function(day,res){
-  if(day){
+router.delete('/:id',function(req,res,next){
+  if(req.day){
+
     Trip.findOne().exec().then(function(trip){
       var i;
       trip.days.some(function(tripDay,index){
-        if(tripDay._id===day._id){
+        if(tripDay.toString()===req.day._id.toString()){
           i = index;
           return true;
         }
       });
       trip.days=trip.days.slice(0,i).concat(trip.days.slice(i+1));
-      trip.save();
+      return trip.save();
     }).then(function(){
-      day.remove();
+      req.day.remove();
+      res.send();
     }).catch(next);
   }else{
     return next(new Error("day not found"));
   }
+});
+
+router.param('toDo', function(req,res,next,toDo){
+  if(toDo !== 'hotel' && toDo !=='restaurants' && toDo !== 'activities'){
+    return next(new Error('Bad Activity'));
+  }
+  req.toDo = toDo;
+  next();
+});
+
+router.get('/:id/:toDo',function(req,res,next){
+  console.log('get');
+  req.day.populate(req.toDo).execPopulate().then(function(day){
+    console.log(day);
+    console.log(req.toDo);
+    res.json(day[req.toDo]);
+  }).catch(next);
+});
+
+router.post('/:id/:toDo',function(req,res,next){
+  var day = req.day;
+  var toDo = req.toDo;
+  day[toDo].push(mongoose.Types.ObjectId(req.query.value));
+  day.save().then(function(){
+    res.send();
+  }).catch(next);
+});
+
+router.delete('/:id/:toDo',function(req,res,next){
+  var day = req.day;
+  var toDo = req.toDo;
+  var i;
+  day[toDo].some(function(id,index){
+    if(id.toString()===req.query.value){
+      i=index;
+      return true;
+    }
+  });
+  day[toDo]=day[toDo].slice(0,i).concat(day[toDo].slice(i+1));
+  day.save().then(function(){
+    res.send();
+  }).catch(next);
 });
 
 

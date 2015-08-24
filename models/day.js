@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 
 var DaySchema = new mongoose.Schema({
-  hotel:        {type: mongoose.Schema.Types.ObjectId, ref: 'Hotel'},
+  hotel:        [{type: mongoose.Schema.Types.ObjectId, ref: 'Hotel'}],
   restaurants:  [{type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant'}],
   activities:   [{type: mongoose.Schema.Types.ObjectId, ref: 'Activity'}]
 });
