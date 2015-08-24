@@ -2,7 +2,7 @@ var express = require('express');
 var morgan = require('morgan');
 var bodyParser = require('body-parser');
 var swig = require('swig');
-var sassMiddleware = require('node-sass-middleware'); 
+var sassMiddleware = require('node-sass-middleware');
 
 var app = express();
 
