@@ -27,14 +27,14 @@ $(document).ready(function() {
         type = $button.data('type'),
         attractions = attractionsByType[type],
         id = $button.siblings('select').val();
-    daysModule.addAttraction(findByTypeAndId(type, id));
+    daysModule.addAttractionDB(findByTypeAndId(type, id));
   });
 
   $('#itinerary').on('click', 'button', function() {
     var $button = $(this),
         type = $button.data('type'),
         id = $button.data('id');
-    daysModule.removeAttraction(findByTypeAndId(type, id));
+    daysModule.removeAttractionDB(findByTypeAndId(type, id));
   });
 
 });

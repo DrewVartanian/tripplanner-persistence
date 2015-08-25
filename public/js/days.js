@@ -5,11 +5,13 @@ var daysModule = (function(){
 
   var exports = {},
       days = [{
-        hotels:      [],
-        restaurants: [],
-        activities:  []
-      }],
-      currentDay = days[0];
+          hotels:      [],
+          restaurants: [],
+          activities:  []
+        }],
+      currentDay = days[0],
+      currentDayNumber = 0,
+      dayIds = [];
 
   function addDay () {
     days.push({
@@ -27,6 +29,7 @@ var daysModule = (function(){
     $title.children('span').remove();
     $title.prepend('<span>Day ' + (index + 1) + '</span>');
     currentDay = days[index];
+    currentDayNumber = index;
     renderDay();
     renderDayButtons();
   }
@@ -57,11 +60,30 @@ var daysModule = (function(){
     renderDay(currentDay);
   };
 
+  exports.addAttractionDB = function(attraction) {
+    $.post('/api/days/'+dayIds[currentDayNumber]+'/'+attraction.type,
+      {value: attraction._id}).done(function(){
+        exports.addAttraction(attraction);
+      });
+  };
+
   exports.removeAttraction = function (attraction) {
     var index = currentDay[attraction.type].indexOf(attraction);
     if (index === -1) return;
+    console.log('test');
     currentDay[attraction.type].splice(index, 1);
     renderDay(currentDay);
+  };
+
+  exports.removeAttractionDB = function (attraction) {
+    $.ajax({
+      url: '/api/days/'+dayIds[currentDayNumber]+'/'+attraction.type,
+      type: 'DELETE',
+      data: {value: attraction._id},
+      success: function(){
+        exports.removeAttraction(attraction);
+      }
+    });
   };
 
   function renderDay(day) {
@@ -81,7 +103,36 @@ var daysModule = (function(){
     return '<div class="itinerary-item><span class="title>' + attraction.name + '</span><button data-id="' + attraction._id + '" data-type="' + attraction.type + '" class="btn btn-xs btn-danger remove btn-circle">x</button></div>';
   }
 
+  function init(){
+    $.get('/api/days/trip').done(function(data){
+
+      data.days.forEach(function(data,index){
+        if(index>0){
+          addDay();
+        }
+        dayIds.push(data);
+      });
+
+      switchDay(0);
+
+      data.hotels.forEach(function(attraction){
+        attraction.type = 'hotels';
+        exports.addAttraction(attraction);
+      });
+
+      data.restaurants.forEach(function(attraction){
+        attraction.type = 'restaurants';
+        exports.addAttraction(attraction);
+      });
+      data.activities.forEach(function(attraction){
+        attraction.type = 'activities';
+        exports.addAttraction(attraction);
+      });
+    });
+  }
+
   $(document).ready(function(){
+    init();
     switchDay(0);
     $('.day-buttons').on('click', '.new-day-btn', addDay);
     $('.day-buttons').on('click', 'button:not(.new-day-btn)', function() {

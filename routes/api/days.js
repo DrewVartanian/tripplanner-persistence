@@ -15,6 +15,20 @@ router.get('/', function(req,res,next) {
   }).catch(next);
 });
 
+router.get('/trip',function(req,res,next){
+  var resObj = {};
+  Trip.findOne({}).exec().then(function(trip){
+    resObj.days=trip.days;
+    Day.findById(resObj.days[0]).populate('hotels').populate('restaurants').
+      populate('activities').exec().then(function(day){
+        resObj.hotels = day.hotels;
+        resObj.restaurants = day.restaurants;
+        resObj.activities = day.activities;
+        res.json(resObj);
+      });
+  });
+});
+
 router.post('/create',function(req,res,next){
   Day.create({}).then(function(day){
     Trip.findOne({}).exec().then(function(trip){
@@ -63,7 +77,7 @@ router.delete('/:id',function(req,res,next){
 });
 
 router.param('toDo', function(req,res,next,toDo){
-  if(toDo !== 'hotel' && toDo !=='restaurants' && toDo !== 'activities'){
+  if(toDo !== 'hotels' && toDo !=='restaurants' && toDo !== 'activities'){
     return next(new Error('Bad Activity'));
   }
   req.toDo = toDo;
@@ -71,10 +85,7 @@ router.param('toDo', function(req,res,next,toDo){
 });
 
 router.get('/:id/:toDo',function(req,res,next){
-  console.log('get');
   req.day.populate(req.toDo).execPopulate().then(function(day){
-    console.log(day);
-    console.log(req.toDo);
     res.json(day[req.toDo]);
   }).catch(next);
 });
@@ -82,7 +93,7 @@ router.get('/:id/:toDo',function(req,res,next){
 router.post('/:id/:toDo',function(req,res,next){
   var day = req.day;
   var toDo = req.toDo;
-  day[toDo].push(mongoose.Types.ObjectId(req.query.value));
+  day[toDo].push(mongoose.Types.ObjectId(req.body.value));
   day.save().then(function(){
     res.send();
   }).catch(next);
@@ -93,7 +104,7 @@ router.delete('/:id/:toDo',function(req,res,next){
   var toDo = req.toDo;
   var i;
   day[toDo].some(function(id,index){
-    if(id.toString()===req.query.value){
+    if(id.toString()===req.body.value){
       i=index;
       return true;
     }
